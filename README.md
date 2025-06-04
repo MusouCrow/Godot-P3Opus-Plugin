@@ -1,181 +1,246 @@
-# OpusLib GDExtension
+# Godot P3Opus Plugin
 
-这是一个集成了Opus音频编解码库的Godot 4.4 GDExtension项目。
+**English** | [中文版](README_CN.md)
 
-## 项目结构
+A GDExtension plugin for Godot 4.4 that decodes P3 format audio files. P3 format is a custom format containing Opus-encoded audio data.
+
+## Project Structure
 
 ```
-OpusLib/
-├── src/                    # 源代码目录
-│   ├── register_types.cpp  # GDExtension注册代码
+Godot-P3Opus-Plugin/
+├── src/                    # Source code directory
+│   ├── register_types.cpp  # GDExtension registration code
 │   ├── register_types.h
-│   ├── debuger.cpp         # 示例类
-│   └── debuger.h
-├── godot-cpp/              # Godot C++绑定 (子模块)
-├── third/                  # 第三方库
-│   └── opus/               # Opus音频库 (子模块)
-├── CMakeLists.txt          # CMake配置文件
-├── extension.gdextension.in # Godot扩展配置模板
-├── build.sh                # 构建脚本
-└── README.md               # 项目说明
+│   ├── p3_decoder.cpp      # P3 decoder implementation
+│   └── p3_decoder.h        # P3 decoder header file
+├── godot-cpp/              # Godot C++ bindings (submodule)
+├── third/                  # Third-party libraries
+│   └── opus/               # Opus audio library (submodule)
+├── demo/                   # Example project
+│   ├── project.godot       # Godot example project
+│   ├── console.gd          # Example script
+│   ├── voice.p3            # Example P3 audio file
+│   ├── extension.gdextension # Godot extension configuration file
+│   └── README_P3Decoder.md # Detailed P3 decoder usage guide
+├── build/                  # Build output directory
+├── CMakeLists.txt          # CMake configuration file
+├── build.sh                # Build script
+├── README.md               # Project documentation (English)
+└── README_CN.md            # Project documentation (Chinese)
 ```
 
-## 依赖要求
+## Features
 
-- CMake 3.16 或更高版本
+- **P3 Format Decoding**: Decode Opus audio data from P3 format files
+- **PCM Output**: Returns 16-bit PCM data that can be used directly with AudioStreamWAV
+- **Fixed Parameters**: Supports 16000Hz sample rate, mono audio
+- **Cross-Platform**: Supports Windows, macOS, Linux
+- **Easy Integration**: Works as a GDExtension plugin, can be used directly in Godot projects
+
+## Requirements
+
+- CMake 3.16 or higher
 - Git
-- C++17 兼容的编译器
-- 支持的平台：Windows、macOS、Linux
+- C++17 compatible compiler
+- Godot 4.1 or higher
+- Supported platforms: Windows, macOS, Linux
 
-## 快速开始
+## Quick Start
 
-### 1. 克隆项目
+### 1. Clone the Project
 
 ```bash
 git clone <your-repo-url>
-cd OpusLib
+cd Godot-P3Opus-Plugin
 ```
 
-### 2. 初始化子模块
+### 2. Initialize Submodules
 
 ```bash
 git submodule update --init --recursive
 ```
 
-或者使用构建脚本：
+Or use the build script:
 
 ```bash
 ./build.sh init
 ```
 
-### 3. 构建项目
+### 3. Build the Project
 
-#### 使用构建脚本（推荐）
+#### Using Build Script (Recommended)
 
 ```bash
-# 构建Release版本
+# Build Release version
 ./build.sh build
 
-# 构建Debug版本
+# Build Debug version
 ./build.sh build debug
 
-# 清理构建文件
+# Clean build files
 ./build.sh clean
 
-# 显示帮助
+# Show help
 ./build.sh help
 ```
 
-#### 手动使用CMake
+#### Manual CMake Build
 
 ```bash
-# 创建构建目录
+# Create build directory
 mkdir build && cd build
 
-# 配置项目
+# Configure project
 cmake .. -DCMAKE_BUILD_TYPE=Release
 
-# 编译
+# Compile
 cmake --build . --config Release -j4
 
-# 返回项目根目录
+# Return to project root
 cd ..
 ```
 
-## 构建输出
+## Build Output
 
-构建完成后，会在以下位置生成文件：
+After building, files will be generated at the following locations:
 
-- **共享库**: `build/lib/libopuslib.[platform].[config].[arch].[ext]`
-- **扩展配置**: `build/extension.gdextension`
+- **Shared Library**: `build/lib/libp3opus.[platform].template_[config].[arch].[ext]`
+- **Extension Configuration**: `demo/extension.gdextension` (pre-configured)
 
-其中：
+Where:
 - `platform`: windows/macos/linux
-- `config`: template_debug/template_release
-- `arch`: x86_64/universal/arm64等
+- `config`: debug/release
+- `arch`: x86_64/universal, etc.
 - `ext`: dll/dylib/so
 
-## 在Godot中使用
+## Using in Godot
 
-1. 将生成的共享库文件复制到你的Godot项目目录
-2. 将`extension.gdextension`文件复制到项目根目录
-3. 在Godot编辑器中重新加载项目
+### 1. Install Plugin
 
-## CMake配置说明
+**Option 1: Use the demo project directly**
+1. Open the `demo/` directory as a Godot project
+2. The extension is already configured and ready to use
 
-### 主要特性
+**Option 2: Install in your own project**
+1. Copy the generated shared library files to your Godot project directory
+2. Copy the `demo/extension.gdextension` file to your project root directory
+3. Adjust the library paths in `extension.gdextension` if necessary
+4. Reload the project in Godot editor
 
-- **跨平台支持**: 自动检测平台并设置相应的构建参数
-- **Opus集成**: 自动构建和链接Opus音频库
-- **Godot-cpp集成**: 自动构建和链接Godot C++绑定
-- **优化设置**: 针对不同构建类型的编译器优化
-- **符号可见性**: 正确设置共享库的符号可见性
+### 2. Basic Usage
 
-### 自定义选项
+```gdscript
+extends Node
 
-你可以通过CMake变量来自定义构建：
-
-```bash
-cmake .. -DCMAKE_BUILD_TYPE=Debug \
-         -DOPUS_BUILD_SHARED_LIBRARY=ON \
-         -DOPUS_BUILD_TESTING=OFF
+func _ready():
+    # Create P3 decoder
+    var decoder = P3Decoder.new()
+    
+    # Decode P3 file
+    var pcm_data = decoder.decode_p3_file("res://voice.p3")
+    
+    if pcm_data.size() > 0:
+        # Create audio stream
+        var stream = AudioStreamWAV.new()
+        stream.format = AudioStreamWAV.FORMAT_16_BITS
+        stream.mix_rate = decoder.get_sample_rate()  # 16000Hz
+        stream.stereo = false  # Mono
+        stream.data = pcm_data
+        
+        # Play audio
+        var player = AudioStreamPlayer.new()
+        player.stream = stream
+        add_child(player)
+        player.play()
+    else:
+        print("P3 file decoding failed")
 ```
 
-### 支持的CMake变量
+### 3. Run Example
 
-- `CMAKE_BUILD_TYPE`: 构建类型 (Debug/Release)
-- `OPUS_BUILD_SHARED_LIBRARY`: 构建Opus共享库
-- `OPUS_BUILD_TESTING`: 构建Opus测试
-- `OPUS_BUILD_PROGRAMS`: 构建Opus程序
+The project includes a complete example in the `demo/` directory:
 
-## 开发说明
+1. Open Godot and import the `demo/` directory as a project
+2. The extension is pre-configured with correct library paths
+3. Run the main scene to see the P3 decoder in action
+4. Check the console output for decoding results
 
-### 添加新的源文件
+## P3 File Format
 
-CMake配置会自动扫描`src/`目录下的所有`.cpp`和`.c`文件，所以你只需要将新文件放在该目录下即可。
+P3 files consist of multiple data packets, each with the following structure:
 
-### 修改扩展配置
+```
++------------------+
+| packet_type (1B) |  // Packet type
++------------------+
+| reserved (1B)    |  // Reserved field
++------------------+
+| data_len (2B)    |  // Data length (big-endian)
++------------------+
+| opus_data (...)  |  // Opus encoded data
++------------------+
+```
 
-如果需要修改Godot扩展的配置，请编辑`extension.gdextension.in`文件。
+## API Reference
 
-### 添加新的依赖
+### P3Decoder Class
 
-如果需要添加新的第三方库，请：
+#### Methods
 
-1. 将库添加到`third/`目录
-2. 在`CMakeLists.txt`中添加相应的`add_subdirectory()`调用
-3. 在`target_link_libraries()`中添加库的链接
+- `decode_p3_file(file_path: String) -> PackedByteArray`
+  - Decodes the specified P3 file and returns 16-bit PCM data
+  - Parameter: P3 file path
+  - Returns: PCM audio data, empty array on failure
 
-## 故障排除
+- `get_sample_rate() -> int`
+  - Gets the audio sample rate (fixed at 16000Hz)
 
-### 常见问题
+- `get_channels() -> int`
+  - Gets the number of audio channels (fixed at 1, mono)
 
-1. **子模块未初始化**
+For detailed API documentation, see: `demo/README_P3Decoder.md`
+
+## Troubleshooting
+
+### Common Issues
+
+1. **CMake Cache Error**
+   ```bash
+   # If you encounter CMakeCache.txt directory errors, clean the build directory
+   rm -rf build/
+   mkdir build
+   ```
+
+2. **Submodules Not Initialized**
    ```bash
    git submodule update --init --recursive
    ```
 
-2. **CMake版本过低**
-   - 请升级到CMake 3.16或更高版本
+3. **CMake Version Too Old**
+   - Please upgrade to CMake 3.16 or higher
 
-3. **编译错误**
-   - 确保安装了C++17兼容的编译器
-   - 检查是否正确初始化了所有子模块
+4. **Compilation Errors**
+   - Ensure you have a C++17 compatible compiler installed
+   - Check that all submodules are properly initialized
 
-4. **链接错误**
-   - 确保Opus库正确构建
-   - 检查目标平台设置是否正确
+5. **Cannot Load Extension in Godot**
+   - Ensure the extension.gdextension file is in the project root directory
+   - Check that the shared library file paths in extension.gdextension are correct
+   - For the demo project, the paths are pre-configured as `../build/lib/...`
+   - For your own project, adjust the paths to point to the correct library location
+   - Confirm Godot version compatibility (requires 4.1+)
 
-### 获取帮助
+### Getting Help
 
-如果遇到问题，请：
+If you encounter issues, please:
 
-1. 检查构建日志中的错误信息
-2. 确认所有依赖都已正确安装
-3. 尝试清理构建目录后重新构建
+1. Check the error messages in the build logs
+2. Confirm all dependencies are properly installed
+3. Try cleaning the build directory and rebuilding
+4. Check the example usage in the demo directory
 
-## 许可证
+## License
 
-请查看相关库的许可证文件：
-- Opus: 参见 `third/opus/COPYING`
-- Godot-cpp: 参见 `godot-cpp/LICENSE` 
+Please refer to the license files of the related libraries:
+- Opus: See `third/opus/COPYING`
+- Godot-cpp: See `godot-cpp/LICENSE` 

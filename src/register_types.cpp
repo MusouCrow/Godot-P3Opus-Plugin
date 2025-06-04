@@ -1,6 +1,5 @@
 #include "register_types.h"
 
-#include "debuger.h"
 #include "p3_decoder.h"
 
 #include <gdextension_interface.h>
@@ -13,8 +12,7 @@ void initialize_example_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
-
-	GDREGISTER_RUNTIME_CLASS(Debuger);
+	
 	GDREGISTER_RUNTIME_CLASS(P3Decoder);
 }
 

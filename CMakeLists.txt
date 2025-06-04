@@ -26,13 +26,13 @@ endif()
 
 if(WIN32)
     set(TARGET_PATH "win64")
-    set(TARGET_NAME "libopuslib.windows.template_${BUILD_SUFFIX}.x86_64.dll")
+    set(TARGET_NAME "libp3opus.windows.template_${BUILD_SUFFIX}.x86_64.dll")
 elseif(APPLE)
     set(TARGET_PATH "macos")
-    set(TARGET_NAME "libopuslib.macos.template_${BUILD_SUFFIX}.universal.dylib")
+    set(TARGET_NAME "libp3opus.macos.template_${BUILD_SUFFIX}.universal.dylib")
 elseif(UNIX)
     set(TARGET_PATH "linux")
-    set(TARGET_NAME "libopuslib.linux.template_${BUILD_SUFFIX}.x86_64.so")
+    set(TARGET_NAME "libp3opus.linux.template_${BUILD_SUFFIX}.x86_64.so")
 endif()
 
 # 根据构建类型设置godot-cpp目标
@@ -79,7 +79,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN YES
-    OUTPUT_NAME "opuslib"
+    OUTPUT_NAME "p3opus"
     PREFIX "lib"
 )
 
