@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://dbiwxpfq1w32k"]
+
+[ext_resource type="Script" uid="uid://bufyvs753fo7f" path="res://console.gd" id="1_epbjq"]
+
+[node name="ScTest" type="Node2D"]
+
+[node name="Console" type="Node" parent="."]
+script = ExtResource("1_epbjq")
+metadata/_custom_type_script = "uid://bufyvs753fo7f"

@@ -1,0 +1,10 @@
+[configuration]
+
+entry_symbol = "example_library_init"
+reloadable = true
+compatibility_minimum = "4.4"
+
+[libraries]
+
+macos.debug = "../build/lib/libopuslib.macos.template_debug.universal.dylib"
+macos.release = "../build/lib/libopuslib.macos.template_release.universal.dylib"

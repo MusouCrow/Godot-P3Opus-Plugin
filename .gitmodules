@@ -1,0 +1,7 @@
+[submodule "godot-cpp"]
+	path = godot-cpp
+	url = https://github.com/godotengine/godot-cpp
+	branch = 4.4
+[submodule "third/opus"]
+	path = third/opus
+	url = https://github.com/xiph/opus.git
