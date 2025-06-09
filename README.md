@@ -2,7 +2,7 @@
 
 **English** | [中文版](README_CN.md)
 
-A GDExtension plugin for Godot 4.4 that decodes P3 format audio files. P3 format is a custom format containing Opus-encoded audio data.
+A GDExtension plugin for Godot 4.4 that decodes P3 format audio data. P3 format is a custom format containing Opus-encoded audio data.
 
 ## Project Structure
 
@@ -31,7 +31,8 @@ Godot-P3Opus-Plugin/
 
 ## Features
 
-- **P3 Format Decoding**: Decode Opus audio data from P3 format files
+- **P3 Format Decoding**: Decode Opus audio data from P3 format binary data
+- **Memory-based Processing**: Direct binary data processing without file I/O operations
 - **PCM Output**: Returns 16-bit PCM data that can be used directly with AudioStreamWAV
 - **Fixed Parameters**: Supports 16000Hz sample rate, mono audio
 - **Cross-Platform**: Supports Windows, macOS, Linux
@@ -136,8 +137,17 @@ func _ready():
     # Create P3 decoder
     var decoder = P3Decoder.new()
     
-    # Decode P3 file
-    var pcm_data = decoder.decode_p3_file("res://voice.p3")
+    # Load P3 file as binary data
+    var file = FileAccess.open("res://voice.p3", FileAccess.READ)
+    if file == null:
+        print("Failed to open P3 file")
+        return
+    
+    var p3_data = file.get_buffer(file.get_length())
+    file.close()
+    
+    # Decode P3 binary data
+    var pcm_data = decoder.decode_p3(p3_data)
     
     if pcm_data.size() > 0:
         # Create audio stream
@@ -153,7 +163,18 @@ func _ready():
         add_child(player)
         player.play()
     else:
-        print("P3 file decoding failed")
+        print("P3 data decoding failed")
+
+# Alternative usage with network data
+func decode_network_p3_data(p3_bytes: PackedByteArray):
+    var decoder = P3Decoder.new()
+    var pcm_data = decoder.decode_p3(p3_bytes)
+    
+    if pcm_data.size() > 0:
+        print("Successfully decoded P3 data from network")
+        # Process PCM data...
+    else:
+        print("Failed to decode network P3 data")
 ```
 
 ### 3. Run Example
@@ -187,16 +208,43 @@ P3 files consist of multiple data packets, each with the following structure:
 
 #### Methods
 
-- `decode_p3_file(file_path: String) -> PackedByteArray`
-  - Decodes the specified P3 file and returns 16-bit PCM data
-  - Parameter: P3 file path
+- `decode_p3(p3_data: PackedByteArray) -> PackedByteArray`
+  - Decodes P3 format binary data and returns 16-bit PCM data
+  - Parameter: P3 binary data as PackedByteArray
   - Returns: PCM audio data, empty array on failure
+  - Use cases: File data, network streams, memory buffers
 
 - `get_sample_rate() -> int`
   - Gets the audio sample rate (fixed at 16000Hz)
 
 - `get_channels() -> int`
   - Gets the number of audio channels (fixed at 1, mono)
+
+#### Usage Examples
+
+**Decode from file:**
+```gdscript
+var file = FileAccess.open("res://audio.p3", FileAccess.READ)
+var p3_data = file.get_buffer(file.get_length())
+file.close()
+
+var decoder = P3Decoder.new()
+var pcm_data = decoder.decode_p3(p3_data)
+```
+
+**Decode from network:**
+```gdscript
+# Assuming you received p3_bytes from network
+var decoder = P3Decoder.new()
+var pcm_data = decoder.decode_p3(p3_bytes)
+```
+
+**Decode from memory buffer:**
+```gdscript
+# Assuming you have P3 data in memory
+var decoder = P3Decoder.new()
+var pcm_data = decoder.decode_p3(your_p3_buffer)
+```
 
 For detailed API documentation, see: `demo/README_P3Decoder.md`
 
@@ -230,6 +278,11 @@ For detailed API documentation, see: `demo/README_P3Decoder.md`
    - For your own project, adjust the paths to point to the correct library location
    - Confirm Godot version compatibility (requires 4.1+)
 
+6. **Empty PCM Data Returned**
+   - Check if the input P3 data is valid and not empty
+   - Verify the P3 data format matches the expected structure
+   - Check console output for specific error messages
+
 ### Getting Help
 
 If you encounter issues, please:
@@ -238,6 +291,7 @@ If you encounter issues, please:
 2. Confirm all dependencies are properly installed
 3. Try cleaning the build directory and rebuilding
 4. Check the example usage in the demo directory
+5. Verify your P3 data format is correct
 
 ## License
 

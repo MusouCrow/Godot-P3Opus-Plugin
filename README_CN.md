@@ -2,7 +2,7 @@
 
 [English](README.md) | **中文版**
 
-这是一个为Godot 4.4开发的GDExtension插件，用于解码P3格式的音频文件。P3格式是一种包含Opus编码音频数据的自定义格式。
+这是一个为Godot 4.4开发的GDExtension插件，用于解码P3格式的音频数据。P3格式是一种包含Opus编码音频数据的自定义格式。
 
 ## 项目结构
 
@@ -31,7 +31,8 @@ Godot-P3Opus-Plugin/
 
 ## 功能特性
 
-- **P3格式解码**: 解码P3格式文件中的Opus音频数据
+- **P3格式解码**: 解码P3格式二进制数据中的Opus音频数据
+- **内存处理**: 直接处理二进制数据，无需文件I/O操作
 - **PCM输出**: 返回16位PCM数据，可直接用于AudioStreamWAV
 - **固定参数**: 支持16000Hz采样率，单声道音频
 - **跨平台**: 支持Windows、macOS、Linux
@@ -136,8 +137,17 @@ func _ready():
     # 创建P3解码器
     var decoder = P3Decoder.new()
     
-    # 解码P3文件
-    var pcm_data = decoder.decode_p3_file("res://voice.p3")
+    # 加载P3文件为二进制数据
+    var file = FileAccess.open("res://voice.p3", FileAccess.READ)
+    if file == null:
+        print("无法打开P3文件")
+        return
+    
+    var p3_data = file.get_buffer(file.get_length())
+    file.close()
+    
+    # 解码P3二进制数据
+    var pcm_data = decoder.decode_p3(p3_data)
     
     if pcm_data.size() > 0:
         # 创建音频流
@@ -153,7 +163,18 @@ func _ready():
         add_child(player)
         player.play()
     else:
-        print("P3文件解码失败")
+        print("P3数据解码失败")
+
+# 网络数据解码的替代用法
+func decode_network_p3_data(p3_bytes: PackedByteArray):
+    var decoder = P3Decoder.new()
+    var pcm_data = decoder.decode_p3(p3_bytes)
+    
+    if pcm_data.size() > 0:
+        print("成功解码来自网络的P3数据")
+        # 处理PCM数据...
+    else:
+        print("网络P3数据解码失败")
 ```
 
 ### 3. 运行示例
@@ -187,16 +208,43 @@ P3文件由多个数据包组成，每个数据包的结构如下：
 
 #### 方法
 
-- `decode_p3_file(file_path: String) -> PackedByteArray`
-  - 解码指定的P3文件，返回16位PCM数据
-  - 参数：P3文件路径
+- `decode_p3(p3_data: PackedByteArray) -> PackedByteArray`
+  - 解码P3格式二进制数据，返回16位PCM数据
+  - 参数：P3二进制数据（PackedByteArray类型）
   - 返回：PCM音频数据，失败时返回空数组
+  - 使用场景：文件数据、网络流、内存缓冲区
 
 - `get_sample_rate() -> int`
   - 获取音频采样率（固定为16000Hz）
 
 - `get_channels() -> int`
   - 获取音频声道数（固定为1，单声道）
+
+#### 使用示例
+
+**从文件解码：**
+```gdscript
+var file = FileAccess.open("res://audio.p3", FileAccess.READ)
+var p3_data = file.get_buffer(file.get_length())
+file.close()
+
+var decoder = P3Decoder.new()
+var pcm_data = decoder.decode_p3(p3_data)
+```
+
+**从网络解码：**
+```gdscript
+# 假设你从网络接收到了p3_bytes
+var decoder = P3Decoder.new()
+var pcm_data = decoder.decode_p3(p3_bytes)
+```
+
+**从内存缓冲区解码：**
+```gdscript
+# 假设你在内存中有P3数据
+var decoder = P3Decoder.new()
+var pcm_data = decoder.decode_p3(your_p3_buffer)
+```
 
 详细的API文档请参考：`demo/README_P3Decoder.md`
 
@@ -216,31 +264,37 @@ P3文件由多个数据包组成，每个数据包的结构如下：
    git submodule update --init --recursive
    ```
 
-3. **CMake版本过低**
+3. **CMake版本过旧**
    - 请升级到CMake 3.16或更高版本
 
 4. **编译错误**
    - 确保安装了C++17兼容的编译器
-   - 检查是否正确初始化了所有子模块
+   - 检查所有子模块是否正确初始化
 
 5. **Godot中无法加载扩展**
    - 确保extension.gdextension文件在项目根目录
    - 检查extension.gdextension中的共享库文件路径是否正确
    - 对于示例项目，路径已预配置为`../build/lib/...`
-   - 对于自己的项目，需要调整路径指向正确的库文件位置
+   - 对于自己的项目，调整路径指向正确的库文件位置
    - 确认Godot版本兼容性（需要4.1+）
+
+6. **返回空的PCM数据**
+   - 检查输入的P3数据是否有效且不为空
+   - 验证P3数据格式是否符合预期结构
+   - 查看控制台输出获取具体错误信息
 
 ### 获取帮助
 
 如果遇到问题，请：
 
 1. 检查构建日志中的错误信息
-2. 确认所有依赖都已正确安装
-3. 尝试清理构建目录后重新构建
+2. 确认所有依赖项都已正确安装
+3. 尝试清理构建目录并重新构建
 4. 查看demo目录中的示例用法
+5. 验证你的P3数据格式是否正确
 
 ## 许可证
 
-请查看相关库的许可证文件：
+请参考相关库的许可证文件：
 - Opus: 参见 `third/opus/COPYING`
 - Godot-cpp: 参见 `godot-cpp/LICENSE` 
