@@ -24,9 +24,6 @@ private:
 
     // Convert from big endian to host byte order
     uint16_t be16_to_host(uint16_t value);
-    
-    // Decode a single Opus packet (internal helper)
-    PackedByteArray decode_opus_packet(const PackedByteArray& opus_packet);
 
 protected:
     static void _bind_methods();
@@ -37,9 +34,6 @@ public:
 
     // Decode P3 binary data and return PCM data
     PackedByteArray decode_p3(const PackedByteArray& p3_data);
-    
-    // Decode Opus binary stream and return PCM data
-    PackedByteArray decode_opus(const PackedByteArray& opus_data);
     
     // Get audio parameters
     int get_sample_rate() const { return SAMPLE_RATE; }
