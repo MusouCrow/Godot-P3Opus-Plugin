@@ -2,7 +2,7 @@
 
 **English** | [中文版](README_CN.md)
 
-A GDExtension plugin for Godot 4.4 that decodes P3 format audio data. P3 format is a custom format containing Opus-encoded audio data.
+A GDExtension plugin for Godot 4.4 that decodes P3 format and pure Opus audio data. P3 format is a custom format containing Opus-encoded audio data.
 
 ## Project Structure
 
@@ -31,12 +31,14 @@ Godot-P3Opus-Plugin/
 
 ## Features
 
-- **P3 Format Decoding**: Decode Opus audio data from P3 format binary data
+- **P3 Format Decoding**: Decode Opus audio data from P3 format binary data (multi-packet)
+- **Pure Opus Decoding**: Decode raw Opus binary data (single packet)
 - **Memory-based Processing**: Direct binary data processing without file I/O operations
 - **PCM Output**: Returns 16-bit PCM data that can be used directly with AudioStreamWAV
 - **Fixed Parameters**: Supports 16000Hz sample rate, mono audio
 - **Cross-Platform**: Supports Windows, macOS, Linux
 - **Easy Integration**: Works as a GDExtension plugin, can be used directly in Godot projects
+- **Modular Architecture**: Shared core decoding logic for both P3 and Opus formats
 
 ## Requirements
 
@@ -130,6 +132,8 @@ Where:
 
 ### 2. Basic Usage
 
+#### Decoding P3 Format Data
+
 ```gdscript
 extends Node
 
@@ -146,7 +150,7 @@ func _ready():
     var p3_data = file.get_buffer(file.get_length())
     file.close()
     
-    # Decode P3 binary data
+    # Decode P3 binary data (multi-packet format)
     var pcm_data = decoder.decode_p3(p3_data)
     
     if pcm_data.size() > 0:
@@ -164,8 +168,42 @@ func _ready():
         player.play()
     else:
         print("P3 data decoding failed")
+```
 
-# Alternative usage with network data
+#### Decoding Pure Opus Data
+
+```gdscript
+extends Node
+
+func decode_opus_packet(opus_bytes: PackedByteArray):
+    var decoder = P3Decoder.new()
+    
+    # Decode pure Opus binary data (single packet)
+    var pcm_data = decoder.decode_opus(opus_bytes)
+    
+    if pcm_data.size() > 0:
+        print("Successfully decoded Opus packet")
+        
+        # Create audio stream
+        var stream = AudioStreamWAV.new()
+        stream.format = AudioStreamWAV.FORMAT_16_BITS
+        stream.mix_rate = decoder.get_sample_rate()  # 16000Hz
+        stream.stereo = false  # Mono
+        stream.data = pcm_data
+        
+        # Play audio
+        var player = AudioStreamPlayer.new()
+        player.stream = stream
+        add_child(player)
+        player.play()
+    else:
+        print("Opus data decoding failed")
+```
+
+#### Network Data Processing
+
+```gdscript
+# Process P3 data from network
 func decode_network_p3_data(p3_bytes: PackedByteArray):
     var decoder = P3Decoder.new()
     var pcm_data = decoder.decode_p3(p3_bytes)
@@ -175,6 +213,17 @@ func decode_network_p3_data(p3_bytes: PackedByteArray):
         # Process PCM data...
     else:
         print("Failed to decode network P3 data")
+
+# Process Opus data from network
+func decode_network_opus_data(opus_bytes: PackedByteArray):
+    var decoder = P3Decoder.new()
+    var pcm_data = decoder.decode_opus(opus_bytes)
+    
+    if pcm_data.size() > 0:
+        print("Successfully decoded Opus data from network")
+        # Process PCM data...
+    else:
+        print("Failed to decode network Opus data")
 ```
 
 ### 3. Run Example
@@ -186,7 +235,9 @@ The project includes a complete example in the `demo/` directory:
 3. Run the main scene to see the P3 decoder in action
 4. Check the console output for decoding results
 
-## P3 File Format
+## Data Format Specifications
+
+### P3 File Format
 
 P3 files consist of multiple data packets, each with the following structure:
 
@@ -202,27 +253,42 @@ P3 files consist of multiple data packets, each with the following structure:
 +------------------+
 ```
 
+### Pure Opus Format
+
+Pure Opus data is raw Opus-encoded binary data without any wrapper headers. This is typically used for:
+- Network streaming
+- Real-time audio transmission
+- Direct Opus packet processing
+
 ## API Reference
 
 ### P3Decoder Class
 
 #### Methods
 
-- `decode_p3(p3_data: PackedByteArray) -> PackedByteArray`
+- **`decode_p3(p3_data: PackedByteArray) -> PackedByteArray`**
   - Decodes P3 format binary data and returns 16-bit PCM data
-  - Parameter: P3 binary data as PackedByteArray
+  - Parameter: P3 binary data as PackedByteArray (multi-packet format)
   - Returns: PCM audio data, empty array on failure
-  - Use cases: File data, network streams, memory buffers
+  - Use cases: P3 files, P3 network streams, P3 memory buffers
 
-- `get_sample_rate() -> int`
+- **`decode_opus(opus_data: PackedByteArray) -> PackedByteArray`**
+  - Decodes pure Opus binary data and returns 16-bit PCM data
+  - Parameter: Pure Opus binary data as PackedByteArray (single packet)
+  - Returns: PCM audio data, empty array on failure
+  - Use cases: Raw Opus packets, network streaming, real-time audio
+
+- **`get_sample_rate() -> int`**
   - Gets the audio sample rate (fixed at 16000Hz)
+  - Returns: 16000
 
-- `get_channels() -> int`
+- **`get_channels() -> int`**
   - Gets the number of audio channels (fixed at 1, mono)
+  - Returns: 1
 
 #### Usage Examples
 
-**Decode from file:**
+**Decode P3 from file:**
 ```gdscript
 var file = FileAccess.open("res://audio.p3", FileAccess.READ)
 var p3_data = file.get_buffer(file.get_length())
@@ -232,21 +298,43 @@ var decoder = P3Decoder.new()
 var pcm_data = decoder.decode_p3(p3_data)
 ```
 
-**Decode from network:**
+**Decode Opus from network:**
 ```gdscript
-# Assuming you received p3_bytes from network
+# Assuming you received opus_bytes from network
 var decoder = P3Decoder.new()
-var pcm_data = decoder.decode_p3(p3_bytes)
+var pcm_data = decoder.decode_opus(opus_bytes)
 ```
 
-**Decode from memory buffer:**
+**Decode P3 from memory buffer:**
 ```gdscript
 # Assuming you have P3 data in memory
 var decoder = P3Decoder.new()
 var pcm_data = decoder.decode_p3(your_p3_buffer)
 ```
 
+**Real-time Opus processing:**
+```gdscript
+# Process individual Opus packets in real-time
+func process_opus_packet(packet: PackedByteArray):
+    var decoder = P3Decoder.new()
+    var pcm_data = decoder.decode_opus(packet)
+    
+    if pcm_data.size() > 0:
+        # Immediately process or play the decoded audio
+        play_pcm_data(pcm_data)
+```
+
 For detailed API documentation, see: `demo/README_P3Decoder.md`
+
+## Architecture
+
+The plugin uses a modular architecture with shared core decoding logic:
+
+- **`decode_p3()`**: Parses P3 headers and processes multiple Opus packets
+- **`decode_opus()`**: Directly processes single Opus packets
+- **`decode_opus_packet()`**: Private helper method containing the core Opus decoding logic
+
+This design ensures code reuse and maintainability while providing flexible interfaces for different use cases.
 
 ## Troubleshooting
 
@@ -279,9 +367,15 @@ For detailed API documentation, see: `demo/README_P3Decoder.md`
    - Confirm Godot version compatibility (requires 4.1+)
 
 6. **Empty PCM Data Returned**
-   - Check if the input P3 data is valid and not empty
-   - Verify the P3 data format matches the expected structure
+   - Check if the input data is valid and not empty
+   - For P3 data: Verify the P3 data format matches the expected structure
+   - For Opus data: Ensure the data is valid Opus-encoded audio
    - Check console output for specific error messages
+
+7. **Audio Quality Issues**
+   - Ensure the input data matches the expected format (16000Hz, mono)
+   - Check that the Opus data was encoded with compatible parameters
+   - Verify the PCM output is being used correctly in AudioStreamWAV
 
 ### Getting Help
 
@@ -291,7 +385,15 @@ If you encounter issues, please:
 2. Confirm all dependencies are properly installed
 3. Try cleaning the build directory and rebuilding
 4. Check the example usage in the demo directory
-5. Verify your P3 data format is correct
+5. Verify your data format is correct (P3 vs pure Opus)
+6. Test with the provided example files first
+
+## Performance Notes
+
+- Both `decode_p3()` and `decode_opus()` are optimized for real-time processing
+- Memory allocation is minimized during decoding
+- The plugin is suitable for both batch processing and streaming applications
+- For high-frequency calls, consider reusing the P3Decoder instance
 
 ## License
 
