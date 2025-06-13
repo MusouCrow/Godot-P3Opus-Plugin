@@ -2,6 +2,7 @@
 
 #include "p3_decoder.h"
 #include "opus_session_decoder.h"
+#include "opus_encoder.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
@@ -16,6 +17,7 @@ void initialize_example_module(ModuleInitializationLevel p_level) {
 	
 	GDREGISTER_RUNTIME_CLASS(P3Decoder);
 	GDREGISTER_RUNTIME_CLASS(OpusSessionDecoder);
+	GDREGISTER_RUNTIME_CLASS(OpusEncoder);
 }
 
 void uninitialize_example_module(ModuleInitializationLevel p_level) {
